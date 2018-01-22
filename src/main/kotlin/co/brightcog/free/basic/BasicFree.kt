@@ -1,7 +1,13 @@
 package co.brightcog.free.basic
 
 import co.brightcog.free.User
-import kategory.*
+import arrow.*
+import arrow.core.*
+import arrow.data.*
+import arrow.free.*
+import arrow.free.instances.*
+import arrow.syntax.option.*
+import arrow.typeclasses.*
 import java.util.*
 
 @higherkind sealed class UserRepositoryAlg<T> : UserRepositoryAlgKind<T> {
@@ -20,6 +26,7 @@ typealias UserRepository<T> = Free<UserRepositoryAlgHK, T>
 val idInterpreter: FunctionK<UserRepositoryAlgHK, IdHK> = object : FunctionK<UserRepositoryAlgHK, IdHK> {
     override fun <A> invoke(fa: UserRepositoryAlgKind<A>): Id<A> {
         val op = fa.ev()
+        @Suppress("UNCHECKED_CAST")
         return when (op) {
 //            is UserRepositoryAlg.FindUser -> Id.pure(Some(User(id = op.id, email = "e@mail.com", loyaltyPoints = 0)))
             is UserRepositoryAlg.FindUser -> Id.pure(None)

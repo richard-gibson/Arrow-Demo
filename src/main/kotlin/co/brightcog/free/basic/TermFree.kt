@@ -1,6 +1,12 @@
 package co.brightcog.free.basic
 
-import kategory.*
+import arrow.*
+import arrow.core.*
+import arrow.data.*
+import arrow.free.*
+import arrow.free.instances.*
+import arrow.syntax.option.*
+import arrow.typeclasses.*
 
 @higherkind sealed class Terminal<out T> : TerminalKind<T> {
     object ReadLine : Terminal<String>()
@@ -24,10 +30,10 @@ val prog: TerminalIO<String> = Terminal.binding {
 }.ev()
 
 
-internal inline fun <A> Option<Nel<A>>.pop(): Tuple2<Option<Nel<A>>, Option<A>> =
+internal fun <A> Option<Nel<A>>.pop(): Tuple2<Option<Nel<A>>, Option<A>> =
         this.fold({ None toT None }, { Nel.fromList(it.tail) toT it.head.some() })
 
-internal inline fun <A> Option<Nel<A>>.push(s: A): Tuple2<Option<Nel<A>>, Unit> =
+internal fun <A> Option<Nel<A>>.push(s: A): Tuple2<Option<Nel<A>>, Unit> =
         this.fold({ Nel.of(s).some() toT Unit }, { Nel(s, it.all).some() toT Unit })
 
 data class Mock(val inp: Option<Nel<String>> = None, val out: Option<Nel<String>> = None)
@@ -38,6 +44,7 @@ typealias MockState<A> = State<Mock, A>
 fun termToState(): FunctionK<TerminalHK, StateKindPartial<Mock>> = object : FunctionK<TerminalHK, StateKindPartial<Mock>> {
     override fun <A> invoke(fa: TerminalKind<A>): MockState<A> {
         val op = fa.ev()
+        @Suppress("UNCHECKED_CAST")
         return when (op) {
             is Terminal.ReadLine ->
                 State<Mock, String> {
@@ -53,6 +60,7 @@ fun termToState(): FunctionK<TerminalHK, StateKindPartial<Mock>> = object : Func
 fun termToEval(): FunctionK<TerminalHK, EvalHK> = object : FunctionK<TerminalHK, EvalHK> {
     override fun <A> invoke(fa: TerminalKind<A>): Eval<A> {
         val op = fa.ev()
+        @Suppress("UNCHECKED_CAST")
         return when (op) {
             is Terminal.ReadLine -> Eval.later { readLine() }
             is Terminal.WriteLine -> Eval.later { println("[Eval Result] ${op.inp}") }
