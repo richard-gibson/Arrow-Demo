@@ -1,9 +1,9 @@
 package co.brightcog.demo.opt
 
 import arrow.core.*
-import arrow.data.*
-import arrow.syntax.option.*
-import arrow.typeclasses.*
+import arrow.data.Nel
+import arrow.instances.extensions
+import arrow.typeclasses.binding
 import co.brightcog.demo.*
 
 
@@ -18,18 +18,13 @@ fun flightById(flightNo: Int): Option<Flight> =
 
 
 fun userFlights(name: String): Option<Nel<Flight>> =
-        try {
-            Option.monad().binding {
-                val user = userByName(name).bind()
-                val manifests = manifestsContainingUser(user).bind()
-                val flights = manifests.traverse({ flightById(it.flightNo) }, Option.applicative()).bind()
-                yields(flights)
-            }.ev()
-
-        } catch (e: Exception) {
-            println("Something went wrong ${e.message}")
-            throw e
-        }
+          ForOption extensions {
+            binding {
+              val user = userByName(name).bind()
+              val manifests = manifestsContainingUser(user).bind()
+              manifests.traverse(Option.applicative(), { flightById(it.flightNo) }).bind()
+            }.fix()
+          }
 
 
 fun main(s: Array<String>) {

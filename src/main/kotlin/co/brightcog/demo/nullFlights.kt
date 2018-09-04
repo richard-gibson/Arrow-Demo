@@ -13,16 +13,14 @@ fun flightById(flightNo: Int): Flight? =
 
 
 fun userFlights(name: String): List<Flight>? {
-    try {
-        val user = userByName(name)
-        return if (user != null) {
-            val manifests = manifestsContainingUser(user)
-            manifests?.map { flightById(it.flightNo) }?.filterNotNull()
-        } else null
-    } catch (e: Exception) {
-        println("Something went wrong ${e.message}")
-        throw e
+  try {
+    return userByName(name)?.let {
+      manifestsContainingUser(it)?.mapNotNull { flightById(it.flightNo) }
     }
+  } catch (e: Exception) {
+    println("Something went wrong ${e.message}")
+    throw e
+  }
 }
 
 

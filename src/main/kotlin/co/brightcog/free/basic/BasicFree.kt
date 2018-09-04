@@ -1,5 +1,5 @@
 package co.brightcog.free.basic
-
+/*
 import co.brightcog.free.User
 import arrow.*
 import arrow.core.*
@@ -54,3 +54,4 @@ fun main(s: Array<String>) {
    val i = result
     println(i)
 }
+    */

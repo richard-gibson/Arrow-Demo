@@ -1,11 +1,13 @@
 package co.brightcog.validation
 
 import arrow.core.*
+import arrow.core.Either.Left
+import arrow.core.Either.Right
 import arrow.data.*
 
 inline fun <A, B> Either<A, B>.valid(pred: (B) -> Boolean, onFail: () -> A): Either<A, B> = when (this) {
-    is Either.Left<A, B> -> this
-    is Either.Right<A, B> -> if (pred(this.b)) this else Either.Left(onFail())
+    is Left<A> -> this
+    is Right<B> -> if (pred(this.b)) this else Either.Left(onFail())
 }
 
 inline fun <A, B> Either<A, B>.toValidatedNel(): ValidatedNel<A, B> =

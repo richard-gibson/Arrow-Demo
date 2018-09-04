@@ -1,10 +1,15 @@
 package co.brightcog.validation
 
-import arrow.core.*
-import arrow.data.*
-import arrow.syntax.applicative.*
-import arrow.syntax.either.*
-import arrow.typeclasses.*
+import arrow.core.Either
+import arrow.core.fix
+import arrow.core.right
+import arrow.data.ListK
+import arrow.data.Nel
+import arrow.data.fix
+import arrow.data.semigroup
+import arrow.instances.ForEither
+import arrow.instances.ForValidated
+import arrow.typeclasses.binding
 
 sealed class Failure {
     data class EmptyString(val fieldName: String) : Failure()
@@ -31,33 +36,41 @@ fun validCities(data: String): Either<Failure, String> =
 
 
 fun empEitherFromMonad(name: String, zipCode: String, city: String, salary: Int): Either<Failure, Employee> =
-        Either.monadError<Failure>().binding {
-            val n = nonBlank("name", name).bind()
-            val z = validZip(zipCode).bind()
-            val c = validCities(city).bind()
-            val s = inRange(10, 20, salary).bind()
-            yields(Employee(n, z, c, s))
-        }.ev()
+    ForEither<Failure>() extensions {
+      binding {
+        val n = nonBlank("name", name).bind()
+        val z = validZip(zipCode).bind()
+        val c = validCities(city).bind()
+        val s = inRange(10, 20, salary).bind()
+        Employee(n, z, c, s)
+      }.fix()
+    }
 
 fun empEitherFromApp(name: String, zipCode: String, city: String, salary: Int): Either<Failure, Employee> =
-        Either.applicative<Failure>().map(
-                nonBlank("name", name),
-                validZip(zipCode),
-                validCities(city),
-                inRange(10, 20, salary)) {
-                    (n, z, c, s) -> Employee(n, z, c, s)
-        }.ev()
+    ForEither<Failure>() extensions {
+      map(nonBlank("name", name),
+          validZip(zipCode),
+          validCities(city),
+          inRange(10, 20, salary)) { (n, z, c, s) ->
+        Employee(n, z, c, s)
+      }.fix()
+    }
 
-fun empValidatedFromApp(name: String, zipCode: String, city: String, salary: Int): Validated<Nel<Failure>, Employee> =
-        Validated.applicative<Nel<Failure>>().map(
-                nonBlank("name", name).toValidatedNel(),
-                validZip(zipCode).toValidatedNel(),
-                validCities(city).toValidatedNel(),
-                inRange(10, 20, salary).toValidatedNel()) {
-                    (n, z, c, s) -> Employee(n, z, c, s)
-        }.ev()
+
+fun empValidatedFromApp(name: String, zipCode: String, city: String, salary: Int): Either<Nel<Failure>, Employee> =
+    ForValidated<Nel<Failure>>(Nel.semigroup()) extensions {
+      map(
+          nonBlank("name", name).toValidatedNel(),
+          validZip(zipCode).toValidatedNel(),
+          validCities(city).toValidatedNel(),
+          inRange(10, 20, salary).toValidatedNel()) { (n, z, c, s) ->
+        Employee(n, z, c, s)
+      }.fix().toEither()
+    }
+
 
 fun main(a: Array<String>) {
+
     println(empEitherFromApp("foo", "00111", "Dublin", 15))
     println(empEitherFromApp("", "00", "Washington", 17500))
     println(empEitherFromApp("foo", "00", "Washington", 17500))
@@ -74,4 +87,3 @@ fun main(a: Array<String>) {
     println(empValidatedFromApp("", "00", "Washington", 17500))
     println(empValidatedFromApp("foo", "00", "Washington", 17500))
 }
-

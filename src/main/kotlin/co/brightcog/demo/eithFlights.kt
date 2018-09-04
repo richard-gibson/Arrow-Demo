@@ -1,10 +1,9 @@
 package co.brightcog.demo.eith
 
 import arrow.core.*
-import arrow.data.*
-import arrow.syntax.either.*
-import arrow.syntax.option.*
-import arrow.typeclasses.*
+import arrow.data.Nel
+import arrow.instances.ForEither
+import arrow.typeclasses.binding
 import co.brightcog.demo.*
 
 
@@ -30,22 +29,23 @@ fun <A, B> safeSystemOp(fa: () -> A, fb: (A) -> Either<Failure, B>): Either<Fail
         Try(fa).fold({ FlightSystemException(it).left() }, fb)
 
 fun flightsFromManifests(manifests: Nel<FlightManafest>): Either<Failure, Nel<Flight>> =
-        manifests.traverse({ flightById(it.flightNo) }, Either.applicative()).ev()
+        manifests.traverse(Either.applicative(), {flightById(it.flightNo) }).fix()
 
 fun userFlights(name: String): Either<Failure, Nel<Flight>> =
-        Either.monadError<Failure>().binding {
-            val user = userByName(name).bind()
-            val manifests = manifestsContainingUser(user).bind()
-            val flights = flightsFromManifests(manifests).bind()
-            yields(flights)
-        }.ev()
+    ForEither<Failure>() extensions {
+      binding {
+        val user = userByName(name).bind()
+        val manifests = manifestsContainingUser(user).bind()
+        flightsFromManifests(manifests).bind()
+      }.fix()
+    }
 
 fun userFlightsFM(name: String): Either<Failure, Nel<Flight>> =
-        userByName(name).flatMap { user ->
-            manifestsContainingUser(user).flatMap { manifests ->
-                manifests.traverse({ flightById(it.flightNo) }, Either.applicative()).ev()
-            }
-        }
+    userByName(name).flatMap { user ->
+      manifestsContainingUser(user).flatMap { manifests ->
+        manifests.traverse(Either.applicative(), { flightById(it.flightNo) }).fix()
+      }
+    }
 
 fun main(s: Array<String>) {
 

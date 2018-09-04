@@ -1,8 +1,9 @@
 package co.brightcog.demo
 
-import arrow.core.*
-import arrow.data.*
-import arrow.syntax.option.*
+import arrow.core.Option
+import arrow.core.none
+import arrow.core.some
+import arrow.data.k
 
 data class Street(val number: Int, val name: String)
 data class Address(val city: String, val street: Street)
